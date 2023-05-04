@@ -52,7 +52,7 @@ k-means算法由James MacQueen于1967年提出，主张基于样本点之间的�
 
 ### 使用效果
 目标：对点云实现初步语义分割。让车辆、行人与地面区分开，方便标注员标注。
-  用fast k-means 聚类点的四维数据（x，y，z，材质值）为点云上色。点云中：点的数量：79.6w个。去除地面点后参与聚类的点的数量：17.4w。k值选取130。普通k-means聚类耗时34.5s，快速k-means聚类耗时0.54s。速度提升64倍。且聚类效果十分接近。
+  用fast k-means 聚类点的四维数据（x，y，z，材质值归一化）为点云上色。点云中：点的数量：79.6w个。去除地面点后参与聚类的点的数量：17.4w。k值选取130。普通k-means聚类耗时34.5s，快速k-means聚类耗时0.54s。速度提升64倍。且聚类效果十分接近。
 
 ### 参考文献
 https://www.spiedigitallibrary.org/conference-proceedings-of-spie/12174/1217410/A-fast-k-means-algorithm-based-on-multi-granularity/10.1117/12.2628453.short
