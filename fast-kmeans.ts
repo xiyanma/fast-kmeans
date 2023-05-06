@@ -262,7 +262,7 @@ const euclideanDistance = (p: Array<number>, q: Array<number>) => {
  * @params {Function} f
  * @returns {number}
  */
-const argmin = (point: any, set: string | any[], distance: Function) => {
+const argmin = (point: Array<number>, set: Array<Array<number>>, distance: Function) => {
   const len = set.length;
   let min = Number.MAX_VALUE;
   let arg = 0;
