@@ -1,211 +1,197 @@
-/**
- * KMEANS clustering
- *
- */
 
-/**
- * KMEANS class constructor
- * @constructor
- *
- * @param {Array} dataset
- * @param {number} k - number of clusters
- * @param {function} distance - distance function
- * @returns {KMEANS}
- */
-export function KMEANS(dataset, k, distance) {
-  this.k = 3; // number of clusters
-  this.dataset = []; // set of feature vectors
-  this.assignments = []; // set of associated clusters for each feature vector
-  this.centroids = []; // vectors for our clusters
+class KMEANS {
+  k: number; // number of clusters
+  dataset: number[][]; // set of feature vectors
+  assignments: number[]; // set of associated clusters for each feature vector
+  centroids: number[][]; // vectors for our clusters
+  distance: (p: number[], q: number[]) => number; // distance function
 
-  this.init(dataset, k, distance);
-}
-
-/**
- * @returns {undefined}
- */
-KMEANS.prototype.init = function (dataset, k, distance) {
-  this.assignments = [];
-  this.centroids = [];
-
-  if (typeof dataset !== 'undefined') {
-    this.dataset = dataset;
+  constructor(dataset: number[][], k: number, distance: (p: number[], q: number[]) => number) {
+    this.k = k ?? 3;
+    this.dataset = dataset ?? [];
+    this.assignments = [];
+    this.centroids = [];
+    this.distance = distance ?? ((p, q) => this.euclideanDistance(p, q));
   }
 
-  if (typeof k !== 'undefined') {
-    this.k = k;
+  /**
+   * @returns {undefined}
+   */
+  init(dataset?: number[][], k?: number, distance?: (p: number[], q: number[]) => number): void {
+    this.assignments = [];
+    this.centroids = [];
+
+    if (dataset) {
+      this.dataset = dataset;
+    }
+
+    if (k) {
+      this.k = k;
+    }
+
+    if (distance) {
+      this.distance = distance;
+    }
   }
 
-  if (typeof distance !== 'undefined') {
-    this.distance = distance;
-  }
-};
+  /**
+   * @returns {undefined}
+   */
+  run(dataset?: number[][], k?: number): number[][][] {
+    this.init(dataset, k);
 
-/**
- * @returns {undefined}
- */
-KMEANS.prototype.run = function (dataset, k) {
-  this.init(dataset, k);
+    const len = this.dataset.length;
 
-  var len = this.dataset.length;
+    // initialize centroids
+    for (let i = 0; i < this.k; i++) {
+      this.centroids[i] = this.randomCentroid();
+    }
 
-  // initialize centroids
-  for (var i = 0; i < this.k; i++) {
-    this.centroids[i] = this.randomCentroid();
-  }
+    let change = true;
+    while (change) {
 
-  var change = true;
-  while (change) {
+      // assign feature vectors to clusters
+      change = this.assign();
 
-    // assign feature vectors to clusters
-    change = this.assign();
+      // adjust location of centroids
+      for (let centroidId = 0; centroidId < this.k; centroidId++) {
+        let mean = new Array(this.dataset[0].length).fill(0);
+        let count = 0;
 
-    // adjust location of centroids
-    for (var centroidId = 0; centroidId < this.k; centroidId++) {
-      var mean = new Array(maxDim);
-      var count = 0;
-
-      // init mean vector
-      for (var dim = 0; dim < maxDim; dim++) {
-        mean[dim] = 0;
-      }
-
-      for (var j = 0; j < len; j++) {
-        var maxDim = this.dataset[j].length;
-
-        // if current cluster id is assigned to point
-        if (centroidId === this.assignments[j]) {
-          for (var dim = 0; dim < maxDim; dim++) {
-            mean[dim] += this.dataset[j][dim];
+        for (let j = 0; j < len; j++) {
+          // if current cluster id is assigned to point
+          if (centroidId === this.assignments[j]) {
+            for (let dim = 0; dim < mean.length; dim++) {
+              mean[dim] += this.dataset[j][dim];
+            }
+            count++;
           }
-          count++;
+        }
+
+        if (count > 0) {
+          // if cluster contain points, adjust centroid position
+          for (let dim = 0; dim < mean.length; dim++) {
+            mean[dim] /= count;
+          }
+
+          this.centroids[centroidId] = mean;
+        } else {
+          // if cluster is empty, generate new random centroid
+          this.centroids[centroidId] = this.randomCentroid();
+          change = true;
         }
       }
+    }
 
-      if (count > 0) {
-        // if cluster contain points, adjust centroid position
-        for (var dim = 0; dim < maxDim; dim++) {
-          mean[dim] /= count;
-        }
-        this.centroids[centroidId] = mean;
-      } else {
-        // if cluster is empty, generate new random centroid
-        this.centroids[centroidId] = this.randomCentroid();
+    return this.getClusters();
+  }
+
+  /**
+   * Generate random centroid
+   *
+   * @returns {Array}
+   */
+  randomCentroid(): number[] {
+    const maxId = this.dataset.length - 1;
+    let centroid;
+    let id;
+
+    do {
+      id = Math.round(Math.random() * maxId);
+      centroid = this.dataset[id];
+    } while (this.centroids.indexOf(centroid) >= 0);
+
+    return centroid;
+  }
+
+  /**
+   * Assign points to clusters
+   *
+   * @returns {boolean}
+   */
+  assign(): boolean {
+    let change = false;
+    const len = this.dataset.length;
+    let closestCentroid: number;
+
+    for (let i = 0; i < len; i++) {
+      closestCentroid = this.argmin(this.dataset[i], this.centroids, this.distance);
+
+      if (closestCentroid !== this.assignments[i]) {
+        this.assignments[i] = closestCentroid;
         change = true;
       }
     }
+
+    return change;
   }
 
-  return this.getClusters();
-};
+  /**
+   * Extract information about clusters
+   *
+   * @returns {undefined}
+   */
+  getClusters(): number[][][] {
+    const clusters = new Array(this.k);
+    let centroidId: number;
 
-/**
- * Generate random centroid
- *
- * @returns {Array}
- */
-KMEANS.prototype.randomCentroid = function () {
-  var maxId = this.dataset.length - 1;
-  var centroid;
-  var id;
+    for (let pointId = 0; pointId < this.assignments.length; pointId++) {
+      centroidId = this.assignments[pointId];
 
-  do {
-    id = Math.round(Math.random() * maxId);
-    centroid = this.dataset[id];
-  } while (this.centroids.indexOf(centroid) >= 0);
+      // init empty cluster
+      if (typeof clusters[centroidId] === 'undefined') {
+        clusters[centroidId] = [];
+      }
 
-  return centroid;
-}
-
-/**
- * Assign points to clusters
- *
- * @returns {boolean}
- */
-KMEANS.prototype.assign = function () {
-  var change = false;
-  var len = this.dataset.length;
-  var closestCentroid;
-
-  for (var i = 0; i < len; i++) {
-    closestCentroid = this.argmin(this.dataset[i], this.centroids, this.distance);
-
-    if (closestCentroid != this.assignments[i]) {
-      this.assignments[i] = closestCentroid;
-      change = true;
+      clusters[centroidId].push(pointId);
     }
+
+    return clusters.map(ids => ids.map(id => this.dataset[id]));
   }
 
-  return change;
-}
+  // utils
 
-/**
- * Extract information about clusters
- *
- * @returns {undefined}
- */
-KMEANS.prototype.getClusters = function () {
-  var clusters = new Array(this.k);
-  var centroidId;
+  /**
+   * @params {Array} point
+   * @params {Array.<Array>} set
+   * @params {Function} f
+   * @returns {number}
+   */
+  argmin(point: number[], set: number[][], f: (p: number[], q: number[]) => number): number {
+    let min = Number.MAX_VALUE;
+    let arg = 0;
+    const len = set.length;
+    let d;
 
-  for (var pointId = 0; pointId < this.assignments.length; pointId++) {
-    centroidId = this.assignments[pointId];
-
-    // init empty cluster
-    if (typeof clusters[centroidId] === 'undefined') {
-      clusters[centroidId] = [];
-    };
-
-    clusters[centroidId].push(pointId);
-  }
-
-  return clusters;
-};
-
-// utils
-
-/**
- * @params {Array} point
- * @params {Array.<Array>} set
- * @params {Function} f
- * @returns {number}
- */
-KMEANS.prototype.argmin = function (point, set, f) {
-  var min = Number.MAX_VALUE;
-  var arg = 0;
-  var len = set.length;
-  var d;
-
-  for (var i = 0; i < len; i++) {
-    d = f(point, set[i]);
-    if (d < min) {
-      min = d;
-      arg = i;
+    for (let i = 0; i < len; i++) {
+      d = f(point, set[i]);
+      if (d < min) {
+        min = d;
+        arg = i;
+      }
     }
-  };
 
-  return arg;
-};
-
-/**
- * Euclidean distance
- *
- * @params {number} p
- * @params {number} q
- * @returns {number}
- */
-KMEANS.prototype.distance = function (p, q) {
-  var sum = 0;
-  var i = Math.min(p.length, q.length);
-
-  while (i--) {
-    var diff = p[i] - q[i];
-    sum += diff * diff;
+    return arg;
   }
 
-  return Math.sqrt(sum);
-};
+  /**
+   * Euclidean distance
+   *
+   * @params {number} p
+   * @params {number} q
+   * @returns {number}
+   */
+  euclideanDistance(p: number[], q: number[]): number {
+    let sum = 0;
+    const dim = Math.min(p.length, q.length);
 
-if (typeof module !== 'undefined' && module.exports) {
-  module.exports = KMEANS;
+    for (let i = 0; i < dim; i++) {
+      const diff = p[i] - q[i];
+      sum += diff * diff;
+    }
+
+    return Math.sqrt(sum);
+  }
 }
+
+export default KMEANS;
