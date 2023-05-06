@@ -13,7 +13,7 @@ export class FastKMEANS {
   private k: number;
   private dataset: Array<Array<number>>;
 
-  //每个样本点所属的聚类簇的标签
+  //每个样本点所属的聚类簇的id
   private assignments: Array<number>;
 
   // 聚类中心
@@ -69,7 +69,7 @@ export class FastKMEANS {
 
       for (let centroidId = 0; centroidId < this.k; centroidId++) {
         if (centroidId !== closestFirstCentroid) {
-          let dist = this.distance(this.dataset[i], this.centroids[centroidId]);
+          const dist = this.distance(this.dataset[i], this.centroids[centroidId]);
           if (dist < minDistance) {
             minDistance = dist;
             secondClosestCentroid = centroidId;
@@ -103,7 +103,7 @@ export class FastKMEANS {
         }
 
         for (let j = 0; j < len; j++) {
-          let maxDim = this.dataset[j].length;
+          const maxDim = this.dataset[j].length;
 
           // 如果当前簇id已分配给点
           if (centroidId === this.assignments[j]) {
@@ -144,9 +144,9 @@ export class FastKMEANS {
           let neighborClusters = this.neighborClusters[this.assignments[i]];
 
           for (let nc = 0; nc < neighborClusters?.length; nc++) {
-            let neighborClusterId = neighborClusters[nc];
+            const neighborClusterId = neighborClusters[nc];
             if (neighborClusterId !== this.assignments[i]) {
-              let distToNeighborCentroid = this.distance(this.dataset[i], this.centroids[neighborClusterId]);
+              const distToNeighborCentroid = this.distance(this.dataset[i], this.centroids[neighborClusterId]);
               if (distToNeighborCentroid < oldLowerBound) {
                 this.lowerBounds[i] = distToNeighborCentroid;
                 this.assignments[i] = neighborClusterId;
@@ -189,15 +189,15 @@ export class FastKMEANS {
     if (this.assignments === undefined) {
       return;
     }
-    let len = this.dataset.length;
-    let neighborClusters: Array<Array<number>> = [];
+    const len = this.dataset.length;
+    const neighborClusters: Array<Array<number>> = [];
 
     for (let i = 0; i < this.k; i++) {
-      let neighborClusterIds = new Set<number>();
+      const neighborClusterIds = new Set<number>();
 
       for (let j = 0; j < len; j++) {
         if (this.assignments[j] === i) {
-          let neighborClustersOfPoint = this.neighborClusters[j];
+          const neighborClustersOfPoint = this.neighborClusters[j];
           if (!neighborClustersOfPoint) return;
           for (let ncof = 0; ncof < neighborClustersOfPoint.length; ncof++) {
             neighborClusterIds.add(neighborClustersOfPoint[ncof]);
@@ -218,7 +218,7 @@ export class FastKMEANS {
    * @returns {undefined}
    */
   getClusters() {
-    let clusters = new Array(this.k);
+    const clusters = new Array(this.k);
     let centroidId;
 
     for (let pointId = 0; pointId < this.assignments.length; pointId++) {
