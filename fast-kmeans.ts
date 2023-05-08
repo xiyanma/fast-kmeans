@@ -16,16 +16,16 @@ export class FastKMEANS {
   private dataset: Point[];
 
   // 每个样本点所属的聚类簇的id
-  private assignments!: Array<number>;
+  private assignments: Array<number>;
 
   // 聚类中心
-  private centroids!: Point[];
+  private centroids: Point[];
 
   // 到最近聚类中心的距离
-  private upperBounds!: Array<number>;
+  private upperBounds: Array<number>;
 
   // 每个数据点到其次近聚类中心的距离
-  private lowerBounds!: Array<number>;
+  private lowerBounds: Array<number>;
 
   // 每个簇的相邻簇
   private neighborClusters: Array<Array<number>>;
