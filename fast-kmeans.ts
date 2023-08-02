@@ -10,7 +10,10 @@
 
 type Point = number[];
 
-export class FastKMEANS {
+// 设置最大迭代次数
+const maxIterations = 40;
+
+export class FastKmeans {
   // 聚类数量
   private k: number;
   private dataset: Point[];
@@ -31,22 +34,28 @@ export class FastKMEANS {
   private neighborClusters: Array<Array<number>>;
   private distance: (a: Point, b: Point) => number;
 
-  constructor(dataset: Point[], k: number = 3, distance: (a: Point, b: Point) => number = euclideanDistance) {
+  constructor(dataset: Point[], k: number = 3, distance: (a: Point, b: Point) => number = euclideanDistanceSquare) {
     this.k = k;
     this.dataset = dataset;
     this.neighborClusters = new Array(this.dataset.length).fill(null).map(() => []);
     this.distance = distance;
+    this.centroids = new Array(this.k);
+
     const len = this.dataset.length;
     this.assignments = new Array(len).fill(-1);
-    this.centroids = new Array(this.k);
     this.upperBounds = new Array(len).fill(undefined);
     this.lowerBounds = new Array(len).fill(undefined);
+
     for (let i = 0; i < this.k; i++) {
       this.centroids[i] = this.randomCentroid();
     }
   }
 
   public run() {
+    let iteration = 0;
+    // 边界条件：当要聚的类比原始数据量大时
+    if (this.k >= this.dataset.length) return new Array(this.k).fill(0).map((_, i) => [i]);
+
     const len = this.dataset.length;
 
     // 初始化质心。基于两个最近的质心初始化上限和下限
@@ -74,7 +83,8 @@ export class FastKMEANS {
 
     // 更新边界和相邻簇直到收敛，迭代次数T
     let change = true;
-    while (change) {
+    while (change && iteration < maxIterations) {
+      iteration++;
       change = false;
       this.updateNeighborClusters();
 
@@ -118,15 +128,36 @@ export class FastKMEANS {
         if (distToClosestCentroid < oldUpperBound) {
           this.upperBounds[i] = distToClosestCentroid;
           const neighbors = this.neighborClusters[this.assignments[i]];
-          for (let nc = 0; nc < neighbors.length; nc++) {
-            const neighborClusterId = neighbors[nc];
-            if (neighborClusterId !== this.assignments[i]) {
-              const distToNeighborCentroid = this.distance(this.dataset[i], this.centroids[neighborClusterId]);
-              if (distToNeighborCentroid < oldLowerBound) {
-                this.lowerBounds[i] = distToNeighborCentroid;
-                this.assignments[i] = neighborClusterId;
-                change = true;
-                break;
+
+          if (neighbors.length === 0) {
+            // 如果邻居簇为空，则重新分配样本点
+            let minDist = Number.MAX_SAFE_INTEGER;
+            let minIdx = -1;
+            for (let j = 0; j < this.centroids.length; j++) {
+              const distToCentroid = this.distance(this.dataset[i], this.centroids[j]);
+              if (distToCentroid < minDist) {
+                minDist = distToCentroid;
+                minIdx = j;
+              }
+            }
+            this.lowerBounds[i] = minDist;
+            if (minIdx !== this.assignments[i]) {
+              // 如果样本点的簇发生了改变，设置 change 为 true
+              this.assignments[i] = minIdx;
+              change = true;
+            }
+          } else {
+            // 邻居簇不为空才更新上下限
+            for (let nc = 0; nc < neighbors.length; nc++) {
+              const neighborClusterId = neighbors[nc];
+              if (neighborClusterId !== this.assignments[i]) {
+                const distToNeighborCentroid = this.distance(this.dataset[i], this.centroids[neighborClusterId]);
+                if (distToNeighborCentroid < oldLowerBound) {
+                  this.lowerBounds[i] = distToNeighborCentroid;
+                  this.assignments[i] = neighborClusterId;
+                  change = true;
+                  break;
+                }
               }
             }
           }
@@ -151,7 +182,7 @@ export class FastKMEANS {
       usedIds.add(id);
     } while (usedIds.size < this.k && usedIds.size < this.dataset.length && this.centroids.includes(centroid));
     return centroid;
-  };
+  }
 
   /**
    * 计算指定聚类簇的邻居簇和邻居簇之间的 lowerBounds 和 upperBounds
@@ -175,7 +206,7 @@ export class FastKMEANS {
       neighborClusters[i] = Array.from(neighborClusterIds);
     }
     this.neighborClusters = neighborClusters;
-  };
+  }
 
   /**
    * 返回簇的集合
@@ -193,17 +224,16 @@ export class FastKMEANS {
       clusters.get(clusterId).push(i);
     }
     return Array.from(clusters.values());
-  };
+  }
 }
 
 /**
  * 欧几里得距离
- *
  * @params {number} p
  * @params {number} q
  * @returns {number}
  */
-const euclideanDistance = (p: Array<number>, q: Array<number>) => {
+export const euclideanDistance = (p: Array<number>, q: Array<number>) => {
   let sum = 0;
   let i = Math.min(p.length, q.length);
   while (i--) {
@@ -211,6 +241,24 @@ const euclideanDistance = (p: Array<number>, q: Array<number>) => {
     sum += diff * diff;
   }
   return Math.sqrt(sum);
+};
+
+/**
+ * 欧几里得距离平方，仅用作比较
+ * @params {number} p
+ * @params {number} q
+ * @returns {number}
+ */
+export const euclideanDistanceSquare = (p: Array<number>, q: Array<number>) => {
+  let sum = 0;
+  let diff = 0;
+  let i = Math.min(p.length, q.length);
+
+  while (i--) {
+    diff = p[i] - q[i];
+    sum += diff * diff;
+  }
+  return sum;
 };
 
 /**
