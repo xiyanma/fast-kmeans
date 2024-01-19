@@ -34,20 +34,28 @@ export class FastKmeans {
   private neighborClusters: Array<Array<number>>;
   private distance: (a: Point, b: Point) => number;
 
-  constructor(dataset: Point[], k: number = 3, distance: (a: Point, b: Point) => number = euclideanDistanceSquare) {
+  constructor(
+    dataset: Point[],
+    k: number = 3,
+    centroids?: Point[],
+    distance: (a: Point, b: Point) => number = euclideanDistanceSquare
+  ) {
     this.k = k;
     this.dataset = dataset;
     this.neighborClusters = new Array(this.dataset.length).fill(null).map(() => []);
     this.distance = distance;
-    this.centroids = new Array(this.k);
 
     const len = this.dataset.length;
     this.assignments = new Array(len).fill(-1);
     this.upperBounds = new Array(len).fill(undefined);
     this.lowerBounds = new Array(len).fill(undefined);
-
-    for (let i = 0; i < this.k; i++) {
-      this.centroids[i] = this.randomCentroid();
+    if (centroids !== undefined) {
+      this.centroids = centroids;
+    } else {
+      this.centroids = new Array(this.k);
+      for (let i = 0; i < this.k; i++) {
+        this.centroids[i] = this.randomCentroid();
+      }
     }
   }
 
@@ -223,7 +231,11 @@ export class FastKmeans {
       }
       clusters.get(clusterId).push(i);
     }
-    return Array.from(clusters.values());
+
+    // 这里可以让返回的结果顺序按照所属的传入的聚类中心顺序排列，在连续帧 kmeans 着色场景下会有帮助。
+    const sortedKeysArray = [...clusters.keys()].sort();
+    const sortedValuesArray = sortedKeysArray.map((key) => clusters.get(key));
+    return sortedValuesArray;
   }
 }
 
