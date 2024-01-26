@@ -1,7 +1,12 @@
 # fast k-means
+
+## 技术选型
+
+几种无监督学习算法：K-means、Meanshift、DBSCAN 聚类效果对比 见论文： ./Point cloud segmentation.pdf
+
 ## 算法解释：
 
-来自论文：./A fast k-means algorithm based on multi-granularity.pdf
+fast k-measn 原理见论文：./A fast k-means algorithm based on multi-granularity.pdf
 
 ### 摘要（Abstract）
 自从提出来以来，k-means算法已经被广泛使用，但标准k-means算法在处理大规模数据时效率不高。为了解决这个问题，本文提出了一种基于多粒度的快速k-means算法。首先，从粗粒度的角度出发，我们利用聚类分布信息来缩小样本点的搜索范围，从而使得在大k的情况下，所提出的算法具有很大的优势。其次，从细粒度的角度出发，我们利用上下界规则来减少参与距离计算的样本点数量，从而减少许多不必要的距离计算。最后，我们对几个真实数据集上提出的k-means算法进行了评估，实验结果表明，平均情况下，所提出的算法比标准k-means算法快数百倍，且精度损失控制在约3％左右，当数据集大小更大、数据集的维数更高时，算法的加速效果更为明显。
